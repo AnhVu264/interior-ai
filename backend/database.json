@@ -1,0 +1,44 @@
+[
+    {
+        "id": "d3824147-d605-4563-bec4-cb3c5ea0806c",
+        "image_url": "http://localhost:8000/static/uploads/94152e32-b0aa-4668-9acd-a9a6818c2409.png",
+        "type": "renovation",
+        "style": "Renovation",
+        "created_at": "2025-12-08 15:55:28"
+    },
+    {
+        "id": "2636ac93-87a7-4694-80f6-1df73bc742d7",
+        "image_url": "http://localhost:8000/static/uploads/0d0ff002-087b-4252-87ba-c0c4dfc5c62a.png",
+        "type": "enhance",
+        "style": "Custom",
+        "created_at": "2025-12-08 15:24:33"
+    },
+    {
+        "id": "670ff230-acf9-4934-9e92-f8a81e5bb2f4",
+        "image_url": "http://localhost:8000/static/uploads/3020e061-0bf1-48ff-ad78-a622aa33d86b.png",
+        "type": "staging",
+        "style": "Scandinavian Bedroom",
+        "created_at": "2025-12-08 15:24:00"
+    },
+    {
+        "id": "96fa4230-6a64-4a04-81f6-b93e71396556",
+        "image_url": "http://localhost:8000/static/uploads/3ba8893c-37e8-449a-950c-7872b0ed63b4.png",
+        "type": "staging",
+        "style": "Scandinavian Bedroom",
+        "created_at": "2025-12-08 15:20:28"
+    },
+    {
+        "id": "073f9513-0e96-4e40-95a2-47e59fe4c7d1",
+        "image_url": "http://localhost:8000/static/uploads/5ede184b-ca36-4899-b792-fe5375d5c3a0.png",
+        "type": "staging",
+        "style": "Modern Living Room",
+        "created_at": "2025-12-08 14:55:51"
+    },
+    {
+        "id": "107650b2-be22-4ec9-9640-457c08ea5000",
+        "image_url": "http://localhost:8000/static/uploads/953c0e41-ca78-4792-a748-e2c02c332327.png",
+        "type": "enhance",
+        "style": "Custom",
+        "created_at": "2025-12-08 14:53:21"
+    }
+]
