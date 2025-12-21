@@ -1,5 +1,12 @@
 [
     {
+        "id": "3da85445-74c2-45ba-b143-89f54a5fb036",
+        "image_url": "http://localhost:8000/static/uploads/09daefc2-11b0-4779-99be-e033ece1e89d.png",
+        "type": "staging",
+        "style": "Modern Living Room",
+        "created_at": "2025-12-21 22:43:37"
+    },
+    {
         "id": "d3824147-d605-4563-bec4-cb3c5ea0806c",
         "image_url": "http://localhost:8000/static/uploads/94152e32-b0aa-4668-9acd-a9a6818c2409.png",
         "type": "renovation",

@@ -139,10 +139,10 @@ function App() {
             
             <div className="bg-gray-100 p-1 rounded-full flex gap-1">
                 <button onClick={() => setView('create')} className={`px-4 md:px-6 py-2 rounded-full font-bold text-sm md:text-base transition-all ${view==='create' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                    🛠️ Tạo Mới
+                    Tạo Mới
                 </button>
                 <button onClick={() => setView('gallery')} className={`px-4 md:px-6 py-2 rounded-full font-bold text-sm md:text-base transition-all ${view==='gallery' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
-                    🖼️ Thư Viện
+                    Thư Viện
                 </button>
             </div>
           </div>
@@ -158,25 +158,25 @@ function App() {
                 {[
                     {
                         id: 'staging', 
-                        label: '🏠 Vẽ Nội Thất', 
+                        label: 'Vẽ Nội Thất', 
                         active: 'bg-blue-600 text-white shadow-blue-200 shadow-lg border-blue-600',
                         inactive: 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
                     },
                     {
                         id: 'renovation', 
-                        label: '🛠️ Cải Tạo', 
+                        label: 'Cải Tạo', 
                         active: 'bg-blue-600 text-white shadow-blue-200 shadow-lg border-blue-600',
                         inactive: 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
                     },
                     {
                         id: 'remove', 
-                        label: '🗑️ Xóa Vật Thể', 
+                        label: 'Xóa Vật Thể', 
                         active: 'bg-blue-600 text-white shadow-blue-200 shadow-lg border-blue-600',
                         inactive: 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
                     },
                     {
                         id: 'enhance', 
-                        label: '✨ Làm Nét Ảnh', 
+                        label: 'Làm Nét Ảnh', 
                         active: 'bg-blue-600 text-white shadow-blue-200 shadow-lg border-blue-600',
                         inactive: 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
                     }
@@ -228,10 +228,10 @@ function App() {
                                     <div>
                                         <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Chọn phong cách</label>
                                         <select value={style} onChange={(e)=>setStyle(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                                            <option value="Modern Living Room">🛋️ Phòng khách Hiện đại</option>
-                                            <option value="Scandinavian Bedroom">🛏️ Phòng ngủ Bắc Âu</option>
-                                            <option value="Luxury Office">💼 Văn phòng Sang trọng</option>
-                                            <option value="Minimalist Kitchen">🍳 Nhà bếp Tối giản</option>
+                                            <option value="Modern Living Room">Phòng khách Hiện đại</option>
+                                            <option value="Scandinavian Bedroom">Phòng ngủ Bắc Âu</option>
+                                            <option value="Luxury Office">Văn phòng Sang trọng</option>
+                                            <option value="Minimalist Kitchen">Nhà bếp Tối giản</option>
                                         </select>
                                     </div>
                                 )}
@@ -251,7 +251,7 @@ function App() {
 
                                 {mode === 'remove' && (
                                     <div className="bg-blue-50 p-3 rounded-lg flex items-center justify-between">
-                                        <span className="text-sm text-blue-800">👉 Tô trắng vào vật cần xóa</span>
+                                        <span className="text-sm text-blue-800">Tô trắng vào vật cần xóa</span>
                                         <button onClick={()=>canvasRef.current.clearCanvas()} className="text-xs font-bold text-blue-600 hover:underline">Xóa nét vẽ</button>
                                     </div>
                                 )}
