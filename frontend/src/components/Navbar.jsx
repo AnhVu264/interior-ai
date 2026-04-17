@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
-import { Menu, Moon, Sparkles, SunMedium, X } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { LogOut, Menu, Moon, Sparkles, SunMedium, X } from "lucide-react";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -10,6 +10,15 @@ const navItems = [
   { label: "Enhancement", href: "/enhancement" },
   { label: "Removal", href: "/removal" },
   { label: "Library", href: "/library" },
+];
+
+const protectedPaths = [
+  "/dashboard",
+  "/staging",
+  "/renovation",
+  "/enhancement",
+  "/removal",
+  "/library",
 ];
 
 function navClass({ isActive }) {
@@ -24,7 +33,9 @@ function navClass({ isActive }) {
 export default function Navbar() {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
+  const [signedInEmail, setSignedInEmail] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const saved = localStorage.getItem("designai-theme");
@@ -32,17 +43,47 @@ export default function Navbar() {
     const isDark = saved ? saved === "dark" : prefersDark;
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
+
+    const email = localStorage.getItem("signedInEmail") || "";
+    setSignedInEmail(email);
   }, []);
 
   useEffect(() => {
     setOpen(false);
+    setSignedInEmail(localStorage.getItem("signedInEmail") || "");
   }, [location.pathname]);
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setSignedInEmail(localStorage.getItem("signedInEmail") || "");
+    };
+
+    window.addEventListener("storage", syncAuth);
+    window.addEventListener("focus", syncAuth);
+
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("focus", syncAuth);
+    };
+  }, []);
 
   const toggleDarkMode = () => {
     const next = !dark;
     setDark(next);
     localStorage.setItem("designai-theme", next ? "dark" : "light");
     document.documentElement.classList.toggle("dark", next);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem("signedInEmail");
+    setSignedInEmail("");
+    navigate("/auth");
+  };
+
+  const getTargetLink = (href) => {
+    const isAuthed = !!signedInEmail;
+    if (!isAuthed && protectedPaths.includes(href)) return "/auth";
+    return href;
   };
 
   return (
@@ -59,7 +100,7 @@ export default function Navbar() {
 
         <nav className="hidden lg:flex items-center gap-8">
           {navItems.map((item) => (
-            <NavLink key={item.href} to={item.href} className={navClass}>
+            <NavLink key={item.href} to={getTargetLink(item.href)} className={navClass}>
               {item.label}
             </NavLink>
           ))}
@@ -74,12 +115,41 @@ export default function Navbar() {
           >
             {dark ? <SunMedium className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button
-            type="button"
-            className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold shadow-lg shadow-violet-500/25 hover:opacity-90 transition"
-          >
-            Sign In
-          </button>
+
+          {signedInEmail ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 shadow-sm">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 text-white flex items-center justify-center text-sm font-black shadow-md shadow-violet-500/20">
+                  {signedInEmail[0]?.toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-bold">
+                    Signed in
+                  </p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 max-w-[160px] truncate">
+                    {signedInEmail}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-950/50 transition shadow-sm"
+                aria-label="Sign out"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              to="/auth"
+              className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold shadow-lg shadow-violet-500/25 hover:opacity-90 transition"
+            >
+              Sign In
+            </Link>
+          )}
         </div>
 
         <button
@@ -98,7 +168,7 @@ export default function Navbar() {
             {navItems.map((item) => (
               <NavLink
                 key={item.href}
-                to={item.href}
+                to={getTargetLink(item.href)}
                 className={({ isActive }) =>
                   [
                     "px-4 py-3 rounded-2xl font-semibold transition",
@@ -121,12 +191,24 @@ export default function Navbar() {
                 {dark ? <SunMedium className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 {dark ? "Light Mode" : "Dark Mode"}
               </button>
-              <button
-                type="button"
-                className="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold"
-              >
-                Sign In
-              </button>
+
+              {signedInEmail ? (
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex-1 px-4 py-3 rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 font-bold flex items-center justify-center gap-2 hover:bg-red-100 dark:hover:bg-red-950/50 transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  className="flex-1 px-4 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold text-center"
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         </div>

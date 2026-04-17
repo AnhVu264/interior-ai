@@ -78,6 +78,10 @@ const features = [
 ];
 
 export default function Home() {
+  const signedInEmail = localStorage.getItem("signedInEmail");
+  const isAuthed = !!signedInEmail;
+  const protectedLink = (link) => (isAuthed ? link : "/auth");
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
       <Navbar />
@@ -110,13 +114,13 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                to="/staging"
+                to={protectedLink("/staging")}
                 className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition shadow-lg shadow-violet-500/30 text-lg"
               >
                 Start Creating <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                to="/library"
+                to={protectedLink("/library")}
                 className="inline-flex items-center justify-center gap-2 bg-white dark:bg-gray-900 text-gray-800 dark:text-white font-bold px-8 py-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition border border-gray-200 dark:border-gray-800 text-lg"
               >
                 <BookImage className="w-5 h-5" /> View Library
@@ -178,7 +182,7 @@ export default function Home() {
                 transition={{ delay: index * 0.1 }}
               >
                 <Link
-                  to={tool.link}
+                  to={protectedLink(tool.link)}
                   className={`group block p-8 rounded-3xl border ${tool.bg} ${tool.border} hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
                 >
                   <div className={`inline-flex p-3 rounded-2xl bg-gradient-to-br ${tool.color} mb-5`}>
@@ -229,7 +233,7 @@ export default function Home() {
             Join thousands of designers and homeowners using DesignAI.
           </p>
           <Link
-            to="/staging"
+            to={protectedLink("/staging")}
             className="inline-flex items-center gap-2 bg-white text-violet-700 font-black px-10 py-4 rounded-2xl hover:bg-gray-100 transition text-lg shadow-lg"
           >
             Get Started Free <ArrowRight className="w-5 h-5" />

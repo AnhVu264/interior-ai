@@ -7,6 +7,15 @@ import Staging from "./pages/Staging";
 import Renovation from "./pages/Renovation";
 import Enhancement from "./pages/Enhancement";
 import Removal from "./pages/Removal";
+import Auth from "./pages/Auth";
+
+function RequireAuth({ children }) {
+  const signedInEmail = localStorage.getItem("signedInEmail");
+  if (!signedInEmail) {
+    return <Navigate to="/auth" replace />;
+  }
+  return children;
+}
 
 function NotFound() {
   return <Navigate to="/" replace />;
@@ -29,12 +38,57 @@ export default function App() {
 
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/library" element={<Library />} />
-        <Route path="/staging" element={<Staging />} />
-        <Route path="/renovation" element={<Renovation />} />
-        <Route path="/enhancement" element={<Enhancement />} />
-        <Route path="/removal" element={<Removal />} />
+        <Route path="/auth" element={<Auth />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <Dashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/library"
+          element={
+            <RequireAuth>
+              <Library />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/staging"
+          element={
+            <RequireAuth>
+              <Staging />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/renovation"
+          element={
+            <RequireAuth>
+              <Renovation />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/enhancement"
+          element={
+            <RequireAuth>
+              <Enhancement />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/removal"
+          element={
+            <RequireAuth>
+              <Removal />
+            </RequireAuth>
+          }
+        />
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
