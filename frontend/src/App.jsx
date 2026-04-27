@@ -8,12 +8,19 @@ import Renovation from "./pages/Renovation";
 import Enhancement from "./pages/Enhancement";
 import Removal from "./pages/Removal";
 import Auth from "./pages/Auth";
+import { useAuth } from "./context/AuthContext";
 
 function RequireAuth({ children }) {
-  const signedInEmail = localStorage.getItem("signedInEmail");
-  if (!signedInEmail) {
+  const { user, loading } = useAuth(); // Lấy trạng thái user từ Context
+  // Trong lúc Context đang gọi API /me để kiểm tra, hiện chữ Đang tải (tránh chớp nhoáng màn hình)
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Đang kiểm tra đăng nhập...</div>;
+  }
+  // Nếu API trả về null (chưa đăng nhập/token hỏng) -> Đá về trang auth
+  if (!user) {
     return <Navigate to="/auth" replace />;
   }
+  // Đã đăng nhập -> Cho phép vào trong
   return children;
 }
 

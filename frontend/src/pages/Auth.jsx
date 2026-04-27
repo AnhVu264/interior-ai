@@ -13,7 +13,10 @@ import {
   Sofa,
   Hammer,
   Eraser,
+  Loader2,
 } from "lucide-react";
+
+import { useAuth } from "../context/AuthContext";
 
 const features = [
   { icon: Sofa, text: "Virtual Staging" },
@@ -39,6 +42,12 @@ export default function Auth() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  // Trạng thái loading khi gọi API
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Lấy hàm login và register từ AuthContext
+  const { login, register } = useAuth();
+
   const getStrength = (pwd) => {
     if (!pwd) return 0;
     let score = 0;
@@ -61,7 +70,7 @@ export default function Auth() {
     setConfirmPassword("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -83,11 +92,17 @@ export default function Auth() {
         return;
       }
 
-      localStorage.setItem(
-        "registeredAccount",
-        JSON.stringify({ email, password, name })
-      );
-      setSubmitted(true);
+      setIsLoading(true);
+      try {
+        // Gọi API Đăng ký
+        await register(name, email, password);
+        setSubmitted(true);
+      } catch (err) {
+        // Lấy thông báo lỗi từ Backend trả về, nếu không có thì hiện lỗi mặc định
+        setError(err.response?.data?.message || "Registration failed. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -96,23 +111,17 @@ export default function Auth() {
         setError("Please enter your email and password.");
         return;
       }
-
-      const registered = JSON.parse(localStorage.getItem("registeredAccount") || "null");
-      if (!registered) {
-        setError("No account found. Please create an account first.");
-        return;
+      setIsLoading(true);
+      try {
+        // Gọi API Đăng nhập
+        await login(email, password);
+        // Chuyển hướng về trang chủ sau khi đăng nhập thành công
+        navigate("/");
+      } catch (err) {
+        setError(err.response?.data?.message || "Invalid email or password.");
+      } finally {
+        setIsLoading(false);
       }
-      if (registered.email !== email) {
-        setError("Email not found. Please check your email.");
-        return;
-      }
-      if (registered.password !== password) {
-        setError("Incorrect password. Please try again.");
-        return;
-      }
-
-      localStorage.setItem("signedInEmail", email);
-      navigate("/Home");
       return;
     }
 
@@ -121,7 +130,12 @@ export default function Auth() {
         setError("Please enter your email address.");
         return;
       }
-      setSubmitted(true);
+      setIsLoading(true);
+      // Tạm thời mô phỏng Quên mật khẩu (Nếu Backend có API này thì thay vào đây)
+      setTimeout(() => {
+        setIsLoading(false);
+        setSubmitted(true);
+      }, 1500);
     }
   };
 
@@ -268,6 +282,7 @@ export default function Auth() {
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           className={`${INPUT_BASE} ${BORDER}`}
+                          disabled={isLoading}
                         />
                       </div>
                     </div>
@@ -285,6 +300,7 @@ export default function Auth() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className={`${INPUT_BASE} ${BORDER}`}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -300,6 +316,7 @@ export default function Auth() {
                             type="button"
                             onClick={() => switchMode("forgot")}
                             className="text-xs text-violet-600 font-bold hover:underline"
+                            disabled={isLoading}
                           >
                             Forgot password?
                           </button>
@@ -314,11 +331,13 @@ export default function Auth() {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           className={`${INPUT_BASE} ${BORDER} pr-11`}
+                          disabled={isLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                          disabled={isLoading}
                         >
                           {showPassword ? (
                             <EyeOff className="w-4 h-4" />
@@ -330,7 +349,7 @@ export default function Auth() {
 
                       {isSignup && password.length > 0 && (
                         <div className="mt-2 flex items-center gap-1">
-                          {[0, 1, 2, 3].map((i) => (
+                          {[0,1,2,3].map((i) => (
                             <div
                               key={i}
                               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
@@ -367,11 +386,13 @@ export default function Auth() {
                               ? "border-emerald-400 focus:ring-emerald-400"
                               : BORDER
                           }`}
+                          disabled={isLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirm(!showConfirm)}
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                          disabled={isLoading}
                         >
                           {showConfirm ? (
                             <EyeOff className="w-4 h-4" />
@@ -397,12 +418,12 @@ export default function Auth() {
                   {isSignup && (
                     <label className="flex items-start gap-3 cursor-pointer group">
                       <div
-                        onClick={() => setAgreed(!agreed)}
+                        onClick={() => !isLoading && setAgreed(!agreed)}
                         className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition ${
                           agreed
                             ? "bg-violet-600 border-violet-600"
                             : "border-gray-300 group-hover:border-violet-400"
-                        }`}
+                        } ${isLoading && "opacity-50 cursor-not-allowed"}`}
                       >
                         {agreed && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                       </div>
@@ -421,21 +442,24 @@ export default function Auth() {
 
                   <button
                     type="submit"
-                    className="w-full mt-2 py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-700 text-white hover:opacity-95 transition shadow-lg shadow-violet-500/30"
+                    disabled={isLoading}
+                    className={`w-full mt-2 py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-700 text-white shadow-lg shadow-violet-500/30 transition ${
+                      isLoading ? "opacity-75 cursor-not-allowed" : "hover:opacity-95"
+                    }`}
                   >
-                    {isLogin && (
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : isLogin ? (
                       <>
                         <ArrowRight className="w-5 h-5" />
                         Sign In
                       </>
-                    )}
-                    {isSignup && (
+                    ) : isSignup ? (
                       <>
                         <Sparkles className="w-5 h-5" />
                         Sign Up
                       </>
-                    )}
-                    {isForgot && (
+                    ) : (
                       <>
                         <Mail className="w-5 h-5" />
                         Send Reset Link
@@ -451,7 +475,8 @@ export default function Auth() {
                     Don&apos;t have an account?{" "}
                     <button
                       onClick={() => switchMode("signup")}
-                      className="text-violet-600 font-black hover:underline"
+                      disabled={isLoading}
+                      className="text-violet-600 font-black hover:underline disabled:opacity-50"
                     >
                       Sign Up
                     </button>
@@ -463,7 +488,8 @@ export default function Auth() {
                     Already have an account?{" "}
                     <button
                       onClick={() => switchMode("login")}
-                      className="text-violet-600 font-black hover:underline"
+                      disabled={isLoading}
+                      className="text-violet-600 font-black hover:underline disabled:opacity-50"
                     >
                       Sign In
                     </button>
@@ -475,7 +501,8 @@ export default function Auth() {
                     Remember your password?{" "}
                     <button
                       onClick={() => switchMode("login")}
-                      className="text-violet-600 font-black hover:underline"
+                      disabled={isLoading}
+                      className="text-violet-600 font-black hover:underline disabled:opacity-50"
                     >
                       Back to Sign In
                     </button>

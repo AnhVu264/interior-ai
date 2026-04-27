@@ -3,12 +3,18 @@ import io
 import shutil
 import uuid
 import time
-import json  # <--- Mới
-import httpx # <--- Mới 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+import json  
+import httpx
+from datetime import datetime, timedelta
+from typing import Optional
+
+import jwt
+import bcrypt
+# from passlib.context import CryptContext
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response, Cookie
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel # <--- Mới
+from pydantic import BaseModel 
 from dotenv import load_dotenv
 import replicate
 
@@ -20,7 +26,7 @@ app = FastAPI()
 # 2. Cấu hình CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -34,7 +40,42 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # File Database giả lập (Lưu dữ liệu vào file này)
 DB_FILE = "database.json"
 
+# ==========================================
+# --- CẤU HÌNH AUTH ---
+# ==========================================
+SECRET_KEY = "your_super_secret_key_change_this"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+USERS_FILE = "users.json"
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+
+# ==========================================
 # --- HÀM PHỤ TRỢ ---
+# ==========================================
+
+# Helpers cho Auth
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return []
+    with open(USERS_FILE, "r") as f:
+        return json.load(f)
+
+def save_users(users):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users, f, indent=4)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 # Hàm tải ảnh từ URL về máy tính (Để lưu vĩnh viễn)
 async def download_image_from_url(url: str):
@@ -70,17 +111,89 @@ def save_to_json(data):
                 current_data = []
     else:
         current_data = []
-
-    current_data.insert(0, data) # Thêm mới nhất lên đầu
-
+    current_data.insert(0, data) 
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(current_data, f, ensure_ascii=False, indent=4)
 
+# ==========================================
 # --- CÁC API ---
+# ==========================================
+class UserRegister(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class UserAuth(BaseModel):
+    email: str
+    password: str
+
+class SaveRequest(BaseModel):
+    result_url: str
+    type: str
+    style: str
 
 @app.get("/")
 def read_root():
     return {"message": "Hello, AI Interior Design App is Ready!"}
+
+@app.post("/register")
+async def register(user_data: UserRegister):
+    users = load_users()
+    if any(u["email"] == user_data.email for u in users):
+        raise HTTPException(status_code=400, detail="Email đã được đăng ký!")
+    
+    # hashed_password = pwd_context.hash(user_data.password)
+    hashed_password = hash_password(user_data.password)
+    new_user = {
+        "email": user_data.email,
+        "password": hashed_password,
+        "name": user_data.name,
+        "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user_data.email
+    }
+    
+    users.append(new_user)
+    save_users(users)
+    return {"message": "Đăng ký thành công!"}
+
+@app.post("/login")
+async def login(user_data: UserAuth, response: Response):
+    users = load_users()
+    user = next((u for u in users if u["email"] == user_data.email), None)
+    
+    # if not user or not pwd_context.verify(user_data.password, user["password"]):
+    if not user or not verify_password(user_data.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Email hoặc mật khẩu không đúng")
+    
+    access_token = create_access_token(data={"sub": user["email"]})
+    
+    response.set_cookie(
+        key="access_token", 
+        value=access_token, 
+        httponly=True,  
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False 
+    )
+    return {"message": "Đăng nhập thành công", "user": {"email": user["email"], "name": user["name"]}}
+
+@app.get("/me")
+async def get_me(access_token: Optional[str] = Cookie(None)):
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Chưa đăng nhập")
+    try:
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        users = load_users()
+        user = next((u for u in users if u["email"] == email), None)
+        if user:
+            return {"email": user["email"], "name": user["name"], "avatar": user.get("avatar")}
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+
+@app.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie("access_token")
+    return {"message": "Đã đăng xuất"}
 
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
@@ -129,6 +242,7 @@ async def remove_object(image: UploadFile = File(...), mask: UploadFile = File(.
         print("Đang xóa vật thể...")
         output = replicate.run(
             "stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
+            #"black-forest-labs/flux-fill-pro",
             input={
                 "image": io.BytesIO(image_content),
                 "mask": io.BytesIO(mask_content),
@@ -153,10 +267,11 @@ async def enhance_image(file: UploadFile = File(...)):
         print("Đang làm nét ảnh...")
         output = replicate.run(
             "nightmareai/real-esrgan",
+            #"recraft-ai/recraft-crisp-upscale",
             input={
                 "image": io.BytesIO(content),
-                "scale": 2,
-                "face_enhance": False
+                # "scale": 2,
+                # "face_enhance": False
             }
         )
         print("Xong:", output)

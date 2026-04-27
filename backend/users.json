@@ -3,5 +3,11 @@
         "email": "nguyenanhvu2642004@gmail.com",
         "password": "$2b$12$d3Y7PglG/dZBs7mQLd0cHee.r05ugyeExs9Q/N0Tt6hj9G.W.PJ7S",
         "name": "nguyenanhvu2642004"
+    },
+    {
+        "email": "phamanhho12345@gmail.com",
+        "password": "$2b$12$OsKzK6ElLF2LU/wkZzFLZOM4PpTCtmkIUkwnyIpyjwGL50MBzZT..",
+        "name": "Anh H\u1ed3",
+        "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=phamanhho12345@gmail.com"
     }
 ]

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Menu, Moon, Sparkles, SunMedium, X } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -33,9 +34,9 @@ function navClass({ isActive }) {
 export default function Navbar() {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
-  const [signedInEmail, setSignedInEmail] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const saved = localStorage.getItem("designai-theme");
@@ -43,29 +44,11 @@ export default function Navbar() {
     const isDark = saved ? saved === "dark" : prefersDark;
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
-
-    const email = localStorage.getItem("signedInEmail") || "";
-    setSignedInEmail(email);
   }, []);
 
   useEffect(() => {
     setOpen(false);
-    setSignedInEmail(localStorage.getItem("signedInEmail") || "");
   }, [location.pathname]);
-
-  useEffect(() => {
-    const syncAuth = () => {
-      setSignedInEmail(localStorage.getItem("signedInEmail") || "");
-    };
-
-    window.addEventListener("storage", syncAuth);
-    window.addEventListener("focus", syncAuth);
-
-    return () => {
-      window.removeEventListener("storage", syncAuth);
-      window.removeEventListener("focus", syncAuth);
-    };
-  }, []);
 
   const toggleDarkMode = () => {
     const next = !dark;
@@ -74,14 +57,17 @@ export default function Navbar() {
     document.documentElement.classList.toggle("dark", next);
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem("signedInEmail");
-    setSignedInEmail("");
-    navigate("/auth");
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Lỗi đăng xuất", error);
+    }
   };
 
   const getTargetLink = (href) => {
-    const isAuthed = !!signedInEmail;
+    const isAuthed = !!user;
     if (!isAuthed && protectedPaths.includes(href)) return "/auth";
     return href;
   };
@@ -116,18 +102,25 @@ export default function Navbar() {
             {dark ? <SunMedium className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {signedInEmail ? (
+          {user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 shadow-sm">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 text-white flex items-center justify-center text-sm font-black shadow-md shadow-violet-500/20">
-                  {signedInEmail[0]?.toUpperCase()}
-                </div>
-                <div className="min-w-0">
+              <div className="flex items-center gap-3 px-3.5 py-2 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 shadow-sm">
+                
+                {/* Avatar xịn lấy từ Backend */}
+                {user.avatar ? (
+                  <img src={user.avatar} alt="Avatar" className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 shadow-md shadow-violet-500/20 border border-gray-200 dark:border-gray-700" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 text-white flex items-center justify-center text-sm font-black shadow-md shadow-violet-500/20">
+                    {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
+                
+                <div className="min-w-0 pr-1">
                   <p className="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500 font-bold">
-                    Signed in
+                    Xin chào,
                   </p>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 max-w-[160px] truncate">
-                    {signedInEmail}
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 max-w-[140px] truncate">
+                    {user.name || user.email}
                   </p>
                 </div>
               </div>
@@ -162,6 +155,7 @@ export default function Navbar() {
         </button>
       </div>
 
+      {/* MOBILE MENU */}
       {open && (
         <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3">
@@ -192,7 +186,7 @@ export default function Navbar() {
                 {dark ? "Light Mode" : "Dark Mode"}
               </button>
 
-              {signedInEmail ? (
+              {user ? (
                 <button
                   type="button"
                   onClick={handleSignOut}

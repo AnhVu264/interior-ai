@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
+import { useAuth } from "../context/AuthContext";
 
 const tools = [
   {
@@ -78,8 +79,8 @@ const features = [
 ];
 
 export default function Home() {
-  const signedInEmail = localStorage.getItem("signedInEmail");
-  const isAuthed = !!signedInEmail;
+  const { user } = useAuth();
+  const isAuthed = !!user;
   const protectedLink = (link) => (isAuthed ? link : "/auth");
 
   return (
