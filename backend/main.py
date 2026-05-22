@@ -7,7 +7,7 @@ import json
 import httpx
 from datetime import datetime, timedelta
 from typing import Optional
-
+import asyncio
 import jwt
 import bcrypt
 # from passlib.context import CryptContext
@@ -215,7 +215,33 @@ async def generate_staging(file: UploadFile = File(...), prompt: str = Form(...)
         raise HTTPException(status_code=500, detail="Thiếu API Key")
     try:
         content = await file.read()
-        print("Đang vẽ nội thất...")
+        print("Đang generate với flux-kontext-pro...")
+        output = replicate.run(
+            "black-forest-labs/flux-kontext-pro",
+            input={
+                "input_image": io.BytesIO(content),  # ✅ input_image
+                "prompt": f"Transform this room into an interior design space with {prompt}. Keep the exact same room structure, walls, floor, ceiling, windows and doors. Only change the furniture and decoration. Make it photorealistic and high quality.",
+                "aspect_ratio": "match_input_image",  # ✅ Giữ tỉ lệ ảnh gốc
+                "output_format": "jpg",
+                "safety_tolerance": 2,
+                "prompt_upsampling": False
+            }
+        )
+        print("Xong:", output)
+        result = output.url if hasattr(output, 'url') else str(output)
+        return {"result_url": result}
+
+    except Exception as e:
+        print("Lỗi:", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/renovation")
+async def generate_staging(file: UploadFile = File(...), prompt: str = Form(...)):
+    if not os.getenv("REPLICATE_API_TOKEN"):
+        raise HTTPException(status_code=500, detail="Thiếu API Key")
+    try:
+        content = await file.read()
+        print("Đang cải tạo căn nhà...")
         output = replicate.run(
             "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
             input={
@@ -232,28 +258,107 @@ async def generate_staging(file: UploadFile = File(...), prompt: str = Form(...)
         print("Lỗi:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
+# @app.post("/remove")
+# async def remove_object(image: UploadFile = File(...), mask: UploadFile = File(...)):
+#     if not os.getenv("REPLICATE_API_TOKEN"):
+#         raise HTTPException(status_code=500, detail="Thiếu API Key")
+#     try:
+#         image_content = await image.read()
+#         mask_content = await mask.read()
+#         print("Đang xóa vật thể...")
+#         output = replicate.run(
+#             "stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
+#             input={
+#                 "image": io.BytesIO(image_content),
+#                 "mask": io.BytesIO(mask_content),
+#                 "prompt": "remove object, empty background, clean walls, high resolution, realistic",
+#                 "negative_prompt": "object, artifacts, blurry, distortion, text",
+#                 "num_inference_steps": 50,
+#                 "guidance_scale": 7.5
+#             }
+#         )
+#         print("Xong:", output)
+#         return {"result_url": str(output[0])}
+#     except Exception as e:
+#         print("Lỗi Remove:", str(e))
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# @app.post("/remove")
+# async def remove_object(image: UploadFile = File(...), mask: UploadFile = File(...),):
+#     if not os.getenv("REPLICATE_API_TOKEN"):
+#         raise HTTPException(status_code=500, detail="Thiếu API Key")
+#     try:
+#         image_content = await image.read()
+#         mask_content = await mask.read()
+#         print("Đang xóa vật thể...")
+#         output = replicate.run(
+#             "black-forest-labs/flux-fill-pro",
+#             input={
+#                 "image": io.BytesIO(image_content),
+#                 "mask": io.BytesIO(mask_content),
+#                 "prompt": "empty space, clean wall, smooth floor, seamless background, high resolution, photorealistic",
+#                 "steps": 50,
+#                 "guidance": 30,
+#                 "output_format": "jpg",
+#                 "safety_tolerance": 2,
+#                 "prompt_upsampling": False
+#             }
+#         )
+#         print("Xong:", output)
+
+#         # ✅ flux-fill-pro trả về object có .url, không phải list[]
+#         result_url = output.url if hasattr(output, 'url') else str(output)
+#         return {"result_url": result_url}
+
+#     except Exception as e:
+#         print("Lỗi Remove:", str(e))
+#         raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/remove")
-async def remove_object(image: UploadFile = File(...), mask: UploadFile = File(...)):
+async def remove_object(
+    image: UploadFile = File(...),
+    mask: UploadFile = File(...),
+    prompt: str = Form(default=""),
+    room_type: str = Form(default="Living Room")
+):
     if not os.getenv("REPLICATE_API_TOKEN"):
         raise HTTPException(status_code=500, detail="Thiếu API Key")
     try:
         image_content = await image.read()
         mask_content = await mask.read()
+
+        # ✅ Tự động build fill prompt theo room_type
+        room_prompts = {
+            "Living Room": "empty living room floor, clean wall, hardwood floor, no furniture, seamless background",
+            "Bedroom": "empty bedroom floor, clean wall, no furniture, seamless background",
+            "Kitchen": "clean kitchen floor, empty counter space, seamless background",
+            "Bathroom": "clean bathroom floor, empty space, seamless background",
+            "Dining Room": "empty dining room floor, clean wall, no furniture, seamless background",
+        }
+
+        # Lấy fill prompt theo room_type, fallback về generic
+        fill_prompt = room_prompts.get(room_type, "empty floor, clean wall, no object, seamless background, photorealistic")
+        
+        print(f"Room: {room_type} | Fill prompt: {fill_prompt}")
         print("Đang xóa vật thể...")
+
         output = replicate.run(
-            "stability-ai/stable-diffusion-inpainting:95b7223104132402a9ae91cc677285bc5eb997834bd2349fa486f53910fd68b3",
-            #"black-forest-labs/flux-fill-pro",
+            "black-forest-labs/flux-fill-pro",
             input={
                 "image": io.BytesIO(image_content),
                 "mask": io.BytesIO(mask_content),
-                "prompt": "remove object, empty background, clean walls, high resolution, realistic",
-                "negative_prompt": "object, artifacts, blurry, distortion, text",
-                "num_inference_steps": 50,
-                "guidance_scale": 7.5
+                "prompt": fill_prompt,  # ✅ Dùng fill prompt, bỏ qua user prompt
+                "steps": 50,
+                "guidance": 60,         # ✅ Tăng từ 30 lên 60
+                "output_format": "jpg",
+                "safety_tolerance": 2,
+                "prompt_upsampling": False
             }
         )
         print("Xong:", output)
-        return {"result_url": str(output[0])}
+        result_url = output.url if hasattr(output, 'url') else str(output)
+        return {"result_url": result_url}
+
     except Exception as e:
         print("Lỗi Remove:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -267,7 +372,6 @@ async def enhance_image(file: UploadFile = File(...)):
         print("Đang làm nét ảnh...")
         output = replicate.run(
             "nightmareai/real-esrgan",
-            #"recraft-ai/recraft-crisp-upscale",
             input={
                 "image": io.BytesIO(content),
                 # "scale": 2,

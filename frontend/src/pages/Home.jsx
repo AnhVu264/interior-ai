@@ -54,11 +54,18 @@ const tools = [
 ];
 
 const stats = [
-  { value: "50K+", label: "Projects Generated" },
-  { value: "4.9★", label: "User Rating" },
-  { value: "2 sec", label: "Avg. Processing" },
-  { value: "99%", label: "Satisfaction Rate" },
+  { value: "", label: "" },
+  { value: "", label: "" },
+  { value: "", label: "" },
+  { value: "", label: "" },
 ];
+
+// const stats = [
+//   { value: "20+", label: "Projects Generated" },
+//   { value: "4.9★", label: "User Rating" },
+//   { value: "5 sec", label: "Avg. Processing" },
+//   { value: "90%", label: "Satisfaction Rate" },
+// ];
 
 const features = [
   {

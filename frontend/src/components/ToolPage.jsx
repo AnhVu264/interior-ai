@@ -33,7 +33,7 @@ const toolConfig = {
     ],
   },
   virtual_renovation: {
-    apiEndpoint: "/staging",
+    apiEndpoint: "/renovation",
     saveType: "renovation",
     badge: "Virtual Renovation",
     suggestions: [
